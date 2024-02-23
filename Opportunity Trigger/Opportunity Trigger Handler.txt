@@ -1,0 +1,107 @@
+public class OpportunityTriggerHandler {
+
+    /*Upon Opportunity Creation if Amount is not null and is greater than 100000 then populate ‘Hot Opportunity’ in description field.*/
+    //Object -Opportunity
+    //Type  - Insert
+    //Event -before
+    Public static void CreateOpportunityWhenAmount(List<Opportunity> OppList){
+      
+        for(Opportunity op : OppList){
+            if(op.Amount > 100000){
+                op.Description = 'Hot Opportunity';
+            }
+			 
+        }
+        
+       System.debug('the inserted record count is ' + OppList.size());
+    }
+
+
+    /*
+
+    
+    
+    /*If opportunity Stage is updated upon its creation or update then update
+     *  description as either 'Opp is Closed Lost' or 'Opp is Closed Won' or 'Opp IS Open'*/
+    //Object -Opportunity
+    //Type  - Insert/Update
+    //Event -before
+    Public static void Update_Desc_ON_Stage(List<Opportunity> CurrentList){
+        for(Opportunity opp : CurrentList){
+            if(opp.StageName == 'Closed Lost'){
+                opp.Description = opp.Name + ' Opportunity is Closed Lost';
+            }
+            else if(opp.StageName == 'Closed Won'){
+                opp.Description = opp.Name + ' Opportunity is Closed Won';
+            }
+            else{
+                opp.Description = opp.Name + ' Opportunity is Open';
+            }
+        }
+        
+    }
+    
+    
+    
+    
+    
+    /*When an opportunity is updated to Closed Lost and Closed Lost Reason (field) 
+     * is not populated then throw validation error that
+     *  ‘Please populate Closed Lost Reason’ on opportunity. [before update]*/
+	//Object -Opportunity
+    //Type  - update
+    //Event -before
+    Public static  void ValidationOnStageLostReason( List<Opportunity> ListOpp ){
+        
+        List<Opportunity> OldRecord = [Select id, StageName FROM Opportunity where id In : ListOpp];
+        Map<id,String> oldMapRec = new Map<id, String>();
+        for(Opportunity rec : OldRecord){
+            oldMapRec.put(rec.id, rec.StageName);
+        }
+        
+        for(Opportunity op: ListOpp){
+            if(op.StageName == 'Closed Lost' && op.Closed_Lost_Reason__c == null){
+                op.addError('Please populate Closed Lost Reason’ on opportunity.');
+            }
+        }
+    }
+
+
+    
+    //*  Account records should have a field named ‘Recent Opportunity Amount’. 
+    //It should contain the opportunity amount of the latest created opportunity on account.*/
+    //Object -Opportunity
+    //Type  - Insert/Update
+    //Event -After
+    public static void UpdateAmountOnAccount(List<opportunity> OppList){
+      
+        List<Account> AccList = new List<Account>();
+        Map<Id, Account> AccountMap =  new Map<Id, Account>([Select id, Recent_Opportunity_Amount__c from account]);
+        for( opportunity Opp : OppList ){
+            if(AccountMap.containsKey(opp.AccountId)){
+                 Account acc = AccountMap.get(Opp.AccountId);
+                 acc.Recent_Opportunity_Amount__c = Opp.Amount;
+                 AccList.add(acc);
+            }
+             
+        }
+        List<Database.SaveResult> Results = Database.update(AccList, false);
+
+        for (Database.SaveResult res : Results) {
+            if (!res.isSuccess()) {
+                for (Database.Error error : res.getErrors()) {
+                    System.debug('Error Message: ' + error.getMessage());
+                    System.debug('Fields: ' + error.getFields());
+                }
+            }
+        }
+
+        
+    }
+    
+
+    
+    
+    
+   
+}

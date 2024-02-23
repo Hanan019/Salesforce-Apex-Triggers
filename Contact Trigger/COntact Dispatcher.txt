@@ -1,0 +1,31 @@
+public class ContactTriggerDispatcher {
+
+    Public static void Dispatch(System.TriggerOperation OperationType){
+        Switch On OperationType{
+            WHEN BEFORE_INSERT{
+                 // Write a trigger on contact to prevent duplicate records based on Contact Email & Contact Phone.
+                //ContactTriggerHandler.PreventDuplication(Trigger.new);
+            }
+            WHEN AFTER_INSERT{
+                ContactTriggerHandler.sendEmailOnContactCreation(Trigger.new);
+            }
+            WHEN BEFORE_UPDATE{
+                /*  When Contact update collect all opportunity Amount And Update this amount on Account Level Field (Total Opportunity Amount).*/
+                 ContactTriggerHandler.updateOpportunityAmount(Trigger.new);
+            }
+            WHEN AFTER_UPDATE{
+               
+            }
+            WHEN BEFORE_DELETE{
+                
+            }
+            WHEN AFTER_DELETE{
+                
+            }
+            WHEN AFTER_UNDELETE{
+                
+            }
+        }
+    }
+    
+}

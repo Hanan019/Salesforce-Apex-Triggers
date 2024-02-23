@@ -1,0 +1,5 @@
+trigger CaseTrigger on Case (before insert,after Insert, Before Update, After Update, Before Delete , After Delete, After Undelete) {
+
+    CaseTriggerDispatcher.Dispatch(Trigger.OperationType);
+    
+}

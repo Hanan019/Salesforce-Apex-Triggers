@@ -1,0 +1,23 @@
+trigger TestTrigger on Account (Before Delete, After Delete) {
+
+    Set<Id> CDLSet = new Set<Id>(); //--now this Set contains the IDs of the files that were related to this account and are in salesforce fiels.
+        if(Trigger.isBefore && Trigger.isDelete){     
+            for(Account acc: Trigger.old){
+                for(ContentDocumentLink cdLink : [Select id, LinkedEntityId,ContentDocumentId From ContentDocumentLink where LinkedEntityId=: acc.Id]){           
+                    CDLSet.add(cdLink.ContentDocumentId);    
+                } 
+            }
+        }		  
+    	System.Debug('Number of record found : ' + CDLSet.size());// ---------to check in debug if we are getting the ContentDocuments IDs,
+   
+      	List<ContentDocument> contentDocumentsToDelete = new List<ContentDocument>(); //---- list to delete
+        for(ContentDocument CDD : [Select id From ContentDocument where id In : CDLSet]){
+            contentDocumentsToDelete.add(CDD);
+        } 
+            System.debug('The Number of records Deleting are  ' + contentDocumentsToDelete.size());
+            if (!contentDocumentsToDelete.isEmpty()) {
+                Delete contentDocumentsToDelete;
+         }
+	
+
+}

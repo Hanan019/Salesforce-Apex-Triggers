@@ -1,0 +1,96 @@
+public class AccountTriggerDispatcher {
+
+        Public static void Dispatch(System.TriggerOperation OperationType){
+        Switch on OperationType{
+            when BEFORE_INSERT{
+                //AccountTriggerHandler.DuplicateAccountPrevention(Trigger.new);
+                AccountTriggerHandler.CheckIndustrySetRating(Trigger.new);  
+                //when checkbox is checked , Shippingaddress = billingAddress;
+                AccountTriggerHandler.CopyBillingToShippingOnCheckBox(Trigger.new);
+            }
+            
+            when AFTER_INSERT{    
+                //AccountTriggerHandler.CreateRelatedContactOnAccountInsert(Trigger.new);
+                
+                //AccountTriggerHandler.CreateRelatedContactCheckIndustry(Trigger.new);
+                
+                //AccountTriggerHandler.CreateRelatedOpportunity(Trigger.new);
+                
+                //Create Number of COntacts equal to "Number of Locations "field in account.
+                AccountTriggerHandler.CreateContactsOnLocation(Trigger.new);
+                
+                //On CheckBox Related Contact Created, On checkBox and "Active = Yes" ,related Opportunity Created
+                AccountTriggerHandler.CreateContactOROpportunityOnCheckBox(Trigger.new);
+                
+
+                
+                //Daily task
+                //AccountTriggerHandler.CreateNotesOnAccountInsertion(Trigger.new);
+            }
+            
+            
+            WHEN BEFORE_UPDATE{
+                //AccountTriggerHandler.DuplicateAccountPrevention(Trigger.new);
+                
+                //Create Number of COntacts equal to "Number of Locations "field in account.
+                AccountTriggerHandler.CreateContactsOnLocation(Trigger.new);
+                
+                //To update the description field when phone number is updated:
+                //AccountTriggerHandler.UpdateDescriptionOnPhone(Trigger.new);
+                
+                AccountTriggerHandler.CopyBillingToShippingOnCheckBox(Trigger.new);
+                
+                //If the Account billing address is updated then update related contacts mailing address. [Using Map]
+                AccountTriggerHandler.UpdateContactMailingAddressByBillingAddress(Trigger.new);
+                
+                //Prevent account record from being edited if the record is created 7 daysback.
+                //AccountTriggerHandler.PreventUpdate_if_Created7Days(Trigger.new);
+            }
+            
+            When AFTER_UPDATE{
+                //When Account Phone is updated. Update the related Contact HomePhone Field with the same value.
+                AccountTriggerHandler.Update_Contact_HomePhone_on_AccountPhone(Trigger.new);
+					
+                //Write a trigger on Account when Account Active field is updated from ‘Yes’ to ‘No’ 
+                //Stage to close lost if stage not equal to close won
+                AccountTriggerHandler.UpdateOpportunityOnAccountActiveStatus(Trigger.new);
+                
+                //Send Email to contacts on account update:
+                AccountTriggerHandler.SendEmailToContactOnAccountUpdate(Trigger.new);
+                
+                /*Write a trigger, if the owner of an account is changed 
+				* then the owner for the related contacts should also be updated. [Using Map]*/
+                AccountTriggerHandler.Update_Contact_Owner_On_Account_Update(Trigger.new);
+                
+                /*Write a trigger on Account when an account is update when account type changes send
+                 *  an email to all its contacts that your account information has been changed. 
+                Subject: Account Update Info 
+                Body: Your account information has been updated successfully. Account Name: XYZ.*/
+                AccountTriggerHandler.SendEmailToContactsOnUpdate(Trigger.new);
+                
+           }
+            
+            When BEFORE_DELETE{
+                //IT will prevent the Record from deleting if "Active__c = Yes"
+                //AccountTriggerHandler.PreventDeleteAccount_If_Active(Trigger.old);
+                
+                //Prevent deletion of an account if there is any opportunity related to that account.
+               // AccountTriggerHandler.PreventDeletionIfOpportunityNotNull(Trigger.old);
+                
+                //AccountTriggerHandler.PreventDeletion_If_CaseNotNull(Trigger.old);
+                //AccountTriggerHandler.PreventDeletion_If_CaseNotNull(Trigger.old);
+                
+                
+                AccountTriggerHandler.PreventDeleteIfNotAdmin(Trigger.old);
+            }
+            
+            WHEN AFTER_DELETE{
+                
+            }
+            
+            WHEN AFTER_UNDELETE{
+                
+            }
+        }
+    }
+}

@@ -1,0 +1,40 @@
+public class EmployeeDispatcher {
+Public static void Dispatch(System.TriggerOperation OperationType){
+        Switch on OperationType{
+            when BEFORE_INSERT{
+
+            }
+            When After_Insert{
+                /*en the Employee record is inserted, deleted and undeleted then update 
+         	 	‘Present Employee Count’ on related Account. [Parent-Child 
+				SOQL]*/
+                EmployeeHandler.TotalEmployeeCountOnAccount(Trigger.new);
+            }
+            
+            WHEN BEFORE_UPDATE{
+
+            }
+            
+            When AFTER_UPDATE{
+                /*en the Employee record is inserted, deleted and undeleted then update 
+         	 	‘Present Employee Count’ on related Account. [Parent-Child 
+				SOQL]*/
+                EmployeeHandler.TotalEmployeeCountOnAccount(Trigger.new);
+           }
+            
+            When BEFORE_DELETE{
+      
+            }
+            
+            WHEN AFTER_DELETE{
+                //When the Employee record is deleted then update ‘Left Employee Count’ on Account.
+                EmployeeHandler.DeleteEmployeeUpdateAccount(Trigger.old);
+            }
+            
+            WHEN AFTER_UNDELETE{
+                 //Undelete An Employee and set the active as true
+                EmployeeHandler.UndeleteEmployee(Trigger.new);
+            }
+        }
+    }
+}

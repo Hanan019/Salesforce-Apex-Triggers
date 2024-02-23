@@ -1,0 +1,5 @@
+trigger EmployeeTrigger on Employee__c (before insert,After Insert, Before update,After Update, Before Delete, After Delete, After Undelete) {
+		
+    
+    EmployeeDispatcher.Dispatch(Trigger.OperationType);
+}

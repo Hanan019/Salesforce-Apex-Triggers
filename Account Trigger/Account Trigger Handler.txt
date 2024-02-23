@@ -1,0 +1,603 @@
+public class AccountTriggerHandler{
+
+
+    //When an new account is created , its related Contact should also be created.  
+        //Object -Account
+        //Type - Insert
+        //Event - After
+        public static void CreateRelatedContactOnAccountInsert(List<Account> AccList){
+            List<Contact> ContactList = New List<Contact>(); 
+            for(Account Acc : AccList){
+                    Contact ContoInsert = new Contact();
+                    ContoInsert.LastName = 'Test Contact';
+                    ContoInsert.AccountId = Acc.Id;
+                    ContoInsert.OwnerId = Acc.OwnerId;
+                    ContactList.add(ContoInsert);               
+            }
+            Insert ContactList;
+        }
+
+    
+    
+    
+    
+    
+    
+    
+        //When ever the Account is created with Industry as Banking then
+        //create a contact for account, Contact Lastname as Account name
+        // and contact phone as account phone.
+        //Object -Account
+        //Type - Insert
+        //Event - Before
+     //new condition  if industry is Banking create related contact..
+            public static void CreateRelatedContactCheckIndustry(List<Account> AccList){
+            List<Contact> ContactList = New List<Contact>(); 
+            for(Account Acc : AccList){
+                if(acc.Industry == 'Banking'){
+                    Contact ContoInsert = new Contact();
+                    ContoInsert.LastName = acc.Name;
+                    ContoInsert.Phone = acc.Phone;
+                    ContoInsert.AccountId = acc.Id;
+                    ContoInsert.OwnerId = acc.OwnerId;
+                    ContactList.add(ContoInsert);
+                }
+            }
+            Insert ContactList;
+        }
+    
+    
+    /*
+     Upon Account Creation if Industry is not null and having value as
+        ‘Media’ then populate Rating as Hot.
+     */
+        //Object -Account
+        //Type - Insert
+        //Event - Before
+            public static void CheckIndustrySetRating(List<Account> AccList){
+            for(Account Acc : AccList){
+                if(acc.Industry != Null && acc.Industry == 'Media'){
+                        acc.Rating = 'Hot';
+                    }
+                }
+          
+            }
+    
+    
+    
+
+ /*
+   Create a related Opportunity when an Account is created.
+*/
+    //Object -Account
+    //Type - Insert
+    //Event - Before 
+    //
+        public static void CreateRelatedOpportunity(List<Account> AccList){
+            List<Opportunity> OppList = New List<Opportunity>(); 
+            for(Account Acc : AccList){
+                    Opportunity Oppp = new Opportunity();
+                    Oppp.Name = 'Test Opportunity';
+                    Oppp.AccountId = acc.Id;
+                    Oppp.CloseDate = System.Today();
+                    Oppp.StageName = 'New';
+                    OppList.add(Oppp);               
+            }
+            Insert OppList;
+        }
+    
+
+    
+  /*
+ Creates the number of contacts which are equal to the number
+which we will enter in the Number of Locations field on the
+Account Object.
+*/
+    //Object-Account
+    //Type - Insert/Update
+    //Event - After
+    Public Static void CreateContactsOnLocation(List<Account>  AccountList){
+        List<Contact> ConList = new List<Contact>();
+        for(Account acc : AccountList){
+            if(acc.NumberofLocations__c != Null)
+            {
+                for(integer i = 0 ; i <acc.NumberofLocations__c ; i++) 
+                {
+                    Contact con = New Contact();
+                    con.AccountId = acc.Id;
+                    con.LastName = acc.Name;
+                    ConList.add(con);
+                }
+             }
+                Insert ConList;
+        }
+               
+    
+    }
+    
+    
+    
+    
+    /*
+If the Account phone is updated then populate below message in description. 
+Description = Phone is Updated! 
+Old Value : XXX    &
+ New Value : XXX
+*/
+    //Object-Account
+    //Type - Update
+    //Event - Before
+
+     Public Static void UpdateDescriptionOnPhone(List<Account>  AccountList)  
+     {
+        /*//Logic 1: 
+        List<Account> OldAccounts = [Select id, Phone from Account WHERE id IN :AccountList];
+        for(Account acc : AccountList)
+        {
+            if(acc.Phone != OldAccounts[0].Phone){
+                acc.Description = 'Account is Update Old Value  :   -- Old Value = ' + OldAccounts[0].Phone + ' && New Value = ' + acc.Phone ;
+            }
+        } 
+        */
+         //Logic 2:
+         Map<id,String> OldPhoneMap = new Map<id,String>();
+         List<Account> OldRecord = [Select id,Phone FROM account WHERE id IN :AccountList];
+         
+         For(Account OldRec : OldRecord){
+             OldPhoneMap.Put(OldRec.Id, OldRec.Phone);
+         }
+         For(Account acc : AccountList){
+             if(OldPhoneMap.Containskey(acc.id) && acc.Phone != OldPhoneMap.get(acc.Id)){
+                 acc.Description = 'Phone Number is Updated :  New value = ' + acc.Phone + '   Old Value  = ' + OldPhoneMap.get(acc.Id);
+             }
+         }
+    
+    }
+    
+    
+    
+    
+    
+    
+    
+    /*  When an account is inserted or updated and the CopyBillingToShipping checkbox is checked
+     *  then automatically copy the account billing address into account shipping address.
+    */
+    //Object-Account
+    //Type - Update/insert
+    //Event - Before
+         Public static void CopyBillingToShippingOnCheckBox(List<Account> CurrRec){
+            
+             For(Account acc : CurrRec){
+                 if(acc.CopyBillingToShipping__c){
+                     acc.ShippingCity = acc.BillingCity;
+                     acc.ShippingCountry = acc.BillingCountry;
+                     acc.ShippingPostalCode = acc.BillingPostalCode;
+                     acc.ShippingState = acc.BillingState;
+                     acc.ShippingStreet = acc.BillingStreet;
+                     acc.Description = 'Billing Address updated on CheckBox';
+                 }
+             }
+             
+        }
+    
+    
+
+
+    
+    
+    
+    
+    /*On Account create two checkbox fields labeled as Contact and Opportunity.
+     *  Now when a new Account record is created and if a particular Contact or
+     *  Opportunity checkbox is checked then create that related record. 
+     *  Also Opportunity record should be created only if the Account record Active picklist is populated with a Yes
+     */
+    //Object-Account
+    //Type - insert
+    //Event - After
+    Public Static Void CreateContactOROpportunityOnCheckBox(List<Account> AccountsList){
+        List<Contact> Contactlist  = new List<Contact>();
+        List<opportunity> OppList = new List<Opportunity>();
+        for(Account acc : AccountsList){
+            if(acc.Contact__c){
+                Contact cont = new Contact();
+                cont.AccountId = acc.Id;
+                cont.LastName = acc.Name;
+                Contactlist.add(cont);
+            }
+            if(acc.Opportunity__c && acc.Active__c == 'yes'){
+                Opportunity opp = new opportunity();
+                opp.AccountId = acc.Id;
+                opp.Name = acc.Name;
+                opp.StageName = 'New';
+                opp.CloseDate = System.Today().addDays(7);
+                OppList.add(opp);
+            }
+        }
+        if(!Contactlist.isEmpty()){
+            Insert ContactList;
+        }
+                if(!OppList.isEmpty()){
+            Insert OppList;
+        }
+    }
+
+    
+
+    
+    /*If the Account billing address is updated then update related contacts mailing address. [Using Map]*/
+    //Object-Account
+    //Type - update
+    //Event - After       
+    Public static void UpdateContactMailingAddressByBillingAddress(List<Account> Accountlist){      
+        List<Contact> UpdatedContacts = new List<Contact>();
+    
+        For(Account acc : AccountList){            
+            if( acc.BillingStreet != Trigger.OldMap.get(acc.Id).get('BillingStreet') ){
+                for(Contact con : [Select id, MailingStreet, MailingCity, MailingCountry From Contact Where AccountId =: acc.Id])
+                {
+                con.MailingStreet = acc.BillingStreet;
+                con.MailingCity = acc.BillingCity;
+                con.MailingCountry = acc.BillingCountry;
+                UpdatedContacts.add(con);
+                }
+               
+            }
+        }
+           Update UpdatedContacts;
+    }
+    
+  
+    
+    
+    
+    /*  Write a trigger on Account when Account Active field is updated from ‘Yes’ to ‘No’ 
+     * then check all opportunities associated with the account. Update all Opportunities
+     *  Stage to close lost if stage not equal to close won*/
+    //Object-Account
+    //Type - update
+    //Event - After  
+    public static void UpdateOpportunityOnAccountActiveStatus(List<Account> AccountList) {
+        List<Opportunity> opportunitiesToUpdate = new List<Opportunity>();
+    
+        for (Account acc : AccountList) {
+            if (Trigger.oldMap.get(acc.Id).get('Active__c') == 'Yes' && acc.Active__c == 'No') {
+                for (Opportunity op : [SELECT Id, AccountId, StageName FROM Opportunity WHERE AccountId =:acc.Id AND StageName != 'Closed Won']) {
+                    op.StageName = 'Closed Lost';
+                    opportunitiesToUpdate.add(op);
+                }
+            }
+        }
+    
+        update opportunitiesToUpdate;
+    }
+
+    
+    
+  
+    
+          /*
+       Account records cannot be deleted if active is Yes. */
+    //Object-Account
+    //Type - Delete
+    //Event - Before
+    
+    Public static Void PreventDeleteAccount_If_Active(List<Account> AccList){
+        
+        For(Account Acc : AccList){
+            if(Acc.Active__c == 'Yes'){
+                Acc.addError('The Record Cannot e deleted since it is active.');
+            }
+        }
+    }
+
+
+    
+    
+    /*Prevent account record from being edited if the record is created 7 daysback.*/
+    //Object-Account
+    //Type - update
+    //Event - Before
+    Public static void PreventUpdate_if_Created7Days(List<Account> AccList)
+    {
+        for(Account ac : AccList)
+        {
+            DateTime SevenDaysBefore = System.now().addDays(-7);
+            if (ac.CreatedDate < SevenDaysBefore)
+            {
+                ac.addError('you cannot delete this Since it is been created for more than 7 days');
+            }
+        }
+    }
+    
+    
+     //If the Account phone is updated then populate the phone number on all related Contacts (Home Phone field). [Using Parent-Child SOQL]
+    //Object-Account
+    //Type - update
+    //Event - After    
+    public static void Update_Contact_HomePhone_on_AccountPhone(List<Account> AccountsList){
+        List<Contact> updateList = new List<Contact>();
+        
+        Map<id, String> NewValues = new Map<id, String>();
+        for(Account acc : AccountsList){
+            NewValues.Put(acc.Id, acc.Phone);
+        }
+        
+        For(Contact Con : [Select id,HomePhone,AccountId From Contact Where AccountId IN :NewValues.KeySet()]){
+            con.HomePhone = NewValues.get(Con.AccountId);
+            updateList.add(Con);
+        }       
+        Update updateList;
+    }  
+   
+    
+    
+    
+    
+    
+    /*Prevent deletion of an account if there is any opportunity related to that account.*/
+    //Object-Account
+    //Type - delete
+    //Event - Before
+    public static void PreventDeletionIfOpportunityNotNull(List<Account> AccountList) {
+
+    Set<id> AccWithOpp = new Set<id>();
+        for (Account acc : [SELECT Id, (SELECT Id FROM Opportunities) FROM Account WHERE Id IN :AccountList]) {
+            // Check if the record is being deleted
+            if(acc.Opportunities != null && !acc.Opportunities.isEmpty()){
+                AccWithOpp.add(acc.id);
+            }
+        }
+        if(!AccWithOpp.isEmpty()){
+            for(Account ac : AccountList){
+                if(AccWithOpp.contains(ac.Id)){
+                    ac.addError('Account Cannot be deleted as there are opportunities in it .');
+                }
+
+            }
+        }
+    
+    }
+
+
+    
+    
+    
+    /*Prevent deletion of an account if there is any case related to that account.*/
+    //Object-Account
+    //Type - Delete
+    //Event - Before
+        Public static void PreventDeletion_If_CaseNotNull(List<Account> AccountList){
+            
+            Set<id> AccwithCase = new Set<Id>();
+            //Lets first get the records with related cases
+            for(Account acc: [Select id, (select id FROM Cases) FROM Account where Id  IN : AccountList]){
+                if( acc.Cases != null && !acc.Cases.IsEmpty() ){
+                    AccwithCase.add(acc.Id);
+                }
+            }
+            //now that which have related cases we have added to to set , let put the condition on current account.
+            if(!AccwithCase.isEmpty()){
+                for(Account ac : AccountList){
+                    if(AccwithCase.contains(ac.Id)){
+                        ac.addError('Cannot deleee this record as it has Case related to it.       :/ Trigger Method  : PreventDeletion_If_CaseNotNull');
+                    }
+                }  
+            }    
+        
+    }
+
+   
+    /*Write a trigger, if the owner of an account is changed 
+     * then the owner for the related contacts should also be updated. [Using Map]*/
+    //Object-Account
+    //Type - Update
+    //Event - After
+    Public Static void Update_Contact_Owner_On_Account_Update(List<Account> AccountList){  
+        //this map will store the previous records of accounts.
+        Map<id,Account> OldMapRec = new Map<id,Account>([Select id, OwnerId from Account]);
+        
+        List<Contact> ConList = new List<Contact>();//------List to store the updated related COntacts.
+        for(Account Acc: AccountList){
+            if(acc.OwnerId != OldMapRec.get(acc.id).OwnerId){
+                for(Contact con : [Select id, OwnerId from Contact Where id =: acc.Id]){
+                    con.OwnerId = Acc.OwnerId;
+                    ConList.add(con);
+                }
+            }
+        }
+        update ConList;
+    }
+    
+    
+
+
+    /*Write a trigger on Account and check only System Administrator profile users should be able to delete an account.*/
+    //Object - Account
+    //Type - Delete
+    //Event - Before   
+    public static void PreventDeleteIfNotAdmin(List<Account> AccountList) {
+        // Query for the System Administrator profile Id
+        Id systemAdminProfileId = [SELECT Id FROM Profile WHERE Name = 'System Administrator' LIMIT 1].Id;
+    
+        for (Account acc : AccountList) {
+            // Check if the current user's profile is not 'System Administrator'
+            if (UserInfo.getProfileId() != systemAdminProfileId) {
+                acc.addError('You cannot delete this account as you are not an admin.   / Trigger Method : PreventDeleteIfNotAdmin');
+            }
+        }
+    }
+    
+  
+
+    
+    /*Write a trigger on Account when an account is update when account type changes send
+     *  an email to all its contacts that your account information has been changed. 
+    Subject: Account Update Info 
+    Body: Your account information has been updated successfully. Account Name: XYZ.*/
+  
+    Public static void SendEmailToContactsOnUpdate(List<Account> AcctoUpdate){
+        
+        List<Account> UpdatedList = new List<Account>(); // ------------this will contain the all accounts with related contacts.
+        List<Account> ExistAc = [Select id, Type,Name, (Select id, AccountId, Email From Contacts) From Account];
+        For(Account Acc : ExistAc)
+        {
+            if(Acc.Contacts != null && !Acc.Contacts.isEmpty()){
+                UpdatedList.add(Acc);
+            }
+        }
+        
+        //now let check the condition if acc is updated
+        For(Account ac  : UpdatedList){
+            if (Trigger.oldMap.containsKey(ac.Id) && Trigger.oldMap.get(ac.Id).get('Type') != ac.Type){ //----------->
+                List<Contact> RelCon = ac.Contacts;
+                //Lets create a list of Email Templates
+                List<Messaging.Email> EmailList = new List<Messaging.Email>();
+                for(Contact con : RelCon){
+                    
+                    
+                    Messaging.SingleEmailMessage msg = New Messaging.SingleEmailMessage();
+                    msg.setSubject('Account Update Info');
+                    msg.setPlainTextBody('Your account information has been updated successfully. Account Name: ' + ac.Name); 
+                    String[] addresses = new String[]{con.Email}; 
+                    msg.setToAddresses(addresses);
+                    EmailList.add(msg);
+                }
+                Messaging.sendEmail(EmailList);
+              
+                
+            }
+        }
+        
+    }
+    
+    
+    /*Add a field Multi-select Picklist on Account and Opportunity as well and add values A,B,C,D,F.
+     *  Now if we update an Opportunity with this multiselect value Account should also update with 
+     * the same picklist values.    
+  public static void ChangeMultiPickListOnOpportunity(List<Account> accList) {
+    List<Opportunity> opportunitiesToUpdate = new List<Opportunity>();
+
+    // Collect unique Opportunity Ids associated with the updated Accounts
+    Set<Id> opportunityIds = new Set<Id>();
+    for (Account acc : accList) {
+        if (Trigger.oldMap.get(acc.Id).To_Update_On_Trigger__c != acc.To_Update_On_Trigger__c) {
+            opportunityIds.addAll(new Map<Id, Opportunity>([SELECT Id FROM Opportunity WHERE AccountId = :acc.Id]).keySet());
+        }
+    }
+
+    // Update the To_Update_On_Trigger__c on related Opportunities
+    for (Opportunity opp : [SELECT Id, To_Update_On_Trigger__c FROM Opportunity WHERE Id IN :opportunityIds]) {
+        if (Trigger.newMap.containsKey(opp.Id) && opp.To_Update_On_Trigger__c != Trigger.newMap.get(opp.Id).To_Update_On_Trigger__c) {
+            opp.To_Update_On_Trigger__c = Trigger.newMap.get(opp.Id).To_Update_On_Trigger__c;
+            opportunitiesToUpdate.add(opp);
+        }
+    }
+
+    // Update related Opportunities
+    if (!opportunitiesToUpdate.isEmpty()) {
+        update opportunitiesToUpdate;
+    }
+}
+*/
+
+
+    
+    
+
+    //--------------------------------------------------------------------------------------------//    
+    ///----------------------------------------Above Methods are working correctly---------------//
+    ///------------------------------------------------------------------------------------------//
+    
+
+
+    
+    
+    
+    
+    /*  Write a trigger on Account when an account is update when account type changes send an email to all its contacts that your account information has been changed. 
+Subject: Account Update Info 
+Body: Your account information has been updated successfully. Account Name: XYZ.
+*/  
+    //Object-Account
+    //Type - Update
+    //Event - After
+
+public static void sendEmailToContactOnAccountUpdate(List<Account> newAccountList) {
+    // Map to store old account values
+    Map<Id, Account> oldAccountMap = new Map<Id, Account>([SELECT Id, Type FROM Account WHERE Id IN :newAccountList]);
+
+    Set<Id> updatedAccountIds = new Set<Id>();
+
+    // Collect updated account IDs
+    for (Account newAccount : newAccountList) {
+        Account oldAccount = oldAccountMap.get(newAccount.Id);
+        if (oldAccount != null && newAccount.Type != oldAccount.Type) {
+            updatedAccountIds.add(newAccount.Id);
+        }
+    }
+
+    // Query contacts related to updated accounts
+    List<Contact> relatedContacts = [SELECT Id, Email, AccountId FROM Contact WHERE AccountId IN :updatedAccountIds];
+
+    // Create a Map to group contacts by AccountId
+    Map<Id, List<Contact>> accountContactsMap = new Map<Id, List<Contact>>();
+    for (Contact contact : relatedContacts) {
+        if (!accountContactsMap.containsKey(contact.AccountId)) {
+            accountContactsMap.put(contact.AccountId, new List<Contact>());
+        }
+        accountContactsMap.get(contact.AccountId).add(contact);
+    }
+
+    // Create and send emails
+    List<Messaging.SingleEmailMessage> emailMessages = new List<Messaging.SingleEmailMessage>();
+
+    for (Account updatedAccount : newAccountList) {
+        List<Contact> contacts = accountContactsMap.get(updatedAccount.Id);
+
+        if (contacts != null) {
+            for (Contact contact : contacts) {
+                Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+                email.setToAddresses(new List<String>{contact.Email});
+                email.setSubject('Account info has been updated');
+                email.setPlainTextBody('Your Account has been Updated Successfully. Account Name: ' + updatedAccount.Name);
+                emailMessages.add(email);
+            }
+        }
+    }
+
+    // Send emails
+    Messaging.sendEmail(emailMessages);
+}
+
+      
+    
+    
+    
+    Public static void CreateNotesOnAccountInsertion(List<Account> AccountsList){
+        List<Account> UpdatedList  = new List<Account>();
+        List<Note> NotesList = new List<Note>();
+        for(Account curr : AccountsList){
+            Note newNote = new Note();
+            newNote.Title = curr.Name;
+            newNote.ParentId = curr.id;
+            newNote.Body = 'This Contact is Associated with the account named : ' + curr.Name;
+            NotesList.add(newNote);
+        }
+        Insert NotesList;
+    }
+    
+    
+    
+    
+    
+    
+    
+    //-----------------------------------------------------------------------------------------------l  
+    //----------------------------------------------------------------------------------------------
+     ///------------------------------------------------------------------------------------------////
+
+    
+    
+}

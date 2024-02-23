@@ -1,0 +1,17 @@
+public class LineItemDispatcher {
+
+    Public static void Dispatch(System.TriggerOperation OpereationType){
+        Switch on OpereationType{
+            When Before_Insert{
+                
+            }
+            When After_Insert{
+                //LineItemHandler.InsertAssetOnAccount(Trigger.new);
+				LineItemHandler.sendEmailToContactRelatedToAccount(Trigger.new);
+		   }
+            WHEN After_Delete{
+                LineItemHandler.DeleteOpportunityAfterDeletingLineItem(Trigger.old);
+            }
+        }
+    }
+}

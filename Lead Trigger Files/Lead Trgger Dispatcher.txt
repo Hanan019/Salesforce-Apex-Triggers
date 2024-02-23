@@ -1,0 +1,31 @@
+public class LeadTriggerDispatcher {
+
+    Public Static void Dispatch(System.TriggerOperation operationType)
+    {
+        Switch ON OperationType{
+            WHEN BEFORE_INSERT{
+                /*When ever Lead is created with LeadSource as Web then give rating as cold otherwise hot*/
+                LeadTriggerHandler.InsertLeadOnLeadSource(Trigger.new);
+            }
+            WHEN AFTER_INSERT{
+                LeadTriggerHandler.SendEmailAsAttachementonLead(Trigger.new);
+         
+            }
+            WHEN BEFORE_UPDATE{
+                
+            }
+            WHEN AFTER_UPDATE{
+                
+            }
+            WHEN BEFORE_DELETE{
+                
+            }
+            WHEN AFTER_DELETE{
+                
+            }
+            WHEN AFTER_UNDELETE{
+                
+            }
+        }
+    }
+}

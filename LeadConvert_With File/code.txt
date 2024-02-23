@@ -1,0 +1,36 @@
+public static void CreatePositionLeadConvert(List<Lead> LeadList) {
+        Set<Id> LinkDocs = new Set<Id>(); // -----------> Set Of Related ContentDOcumentLinks Ids in the lead to be converted.
+        List<Lead> LdList = new List<Lead>(); //---------> List Contains the Leads that have related Documents in it. 
+        for (Lead LD : LeadList) {
+            for (ContentDocumentLink CDL : [SELECT Id, LinkedEntityId, ContentDocumentId
+                                             FROM ContentDocumentLink
+                                             WHERE LinkedEntityId = :LD.Id]) {
+                LinkDocs.add(CDL.ContentDocumentId);
+            }
+            LdList.add(LD);        //Adding to the List .
+        }    
+        System.debug('The related files in this lead are ' + LinkDocs.size());//--------Shows how many Documents are in the Lead
+        List<ContentDocumentLink> links = new List<ContentDocumentLink>();
+        List<Position__c> newpos = new List<Position__c>();//--------> A list that will contain the positions to be inserted.s
+        for (Lead Ld : LdList) {
+            if (Ld.IsConverted) {
+                Position__c pos = new Position__c();
+                pos.Name = Ld.LastName;
+                pos.LeadId__c = Ld.Id;
+                newpos.add(pos);
+            }
+        }
+        System.debug('The number of position accounts inserted are ' + newpos.size());
+        Insert newpos;
+        for(Position__c p : newpos){          
+            for(ContentDocument CD : [Select id from ContentDocument where id In : LinkDocs])
+            {
+                ContentDocumentLink newDoc= new ContentDocumentLink();
+                newDoc.ContentDocumentId = CD.Id;
+                newDoc.LinkedEntityId = p.Id;
+                links.add(newDoc); // Add the ContentDocumentLink to the list 
+            }
+        }     
+        Insert links; // Insert the ContentDocumentLinks
+        System.debug('The Files inserted in New Position are ' + links.size());
+    }

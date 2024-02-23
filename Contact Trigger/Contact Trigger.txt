@@ -1,0 +1,4 @@
+trigger ContacTrigger on Contact (before insert,After Insert, Before Update, After update, Before Delete, After Delete, After Undelete) {
+
+    ContactTriggerDispatcher.Dispatch(Trigger.OperationType);
+        }

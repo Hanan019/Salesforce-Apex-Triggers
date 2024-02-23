@@ -1,0 +1,3 @@
+trigger AccountTrigger on Account (before insert,After INSERT, Before Update, After Update, Before Delete, After Delete, After Undelete) {
+		AccountTriggerDispatcher.Dispatch(Trigger.OperationType);
+}

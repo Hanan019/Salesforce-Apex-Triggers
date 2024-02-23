@@ -1,0 +1,9 @@
+trigger OpportunityTrigger on Opportunity (After Insert) {
+
+    If(trigger.isInsert && trigger.IsAfter){
+        
+       OpportunityTriggerHandler.UpdateAmountOnAccount(Trigger.new);
+    
+    }
+    //OpportunityTriggerDispatcher.Dispatch(Trigger.OperationType);
+}

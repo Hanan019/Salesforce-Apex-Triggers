@@ -1,0 +1,127 @@
+public class LineItemHandler {
+
+    
+    
+    /*  Create an asset when create an OpportunityLineItem with associated Account.*/
+    Public Static void InsertAssetOnAccount(List<OpportunityLineItem> LineItemList){ 
+        Map<id, Id> AccOppMap = New Map<id, Id>();
+        //lets first get the Opportunities ids that are related to  current LineItem.
+        For(OpportunityLineItem opl : LineItemList){
+            if(opl.OpportunityId != null){
+                AccOppMap.put(opl.OpportunityId, null);
+            }
+        }
+        //now lets get the AccountIDs that  are related to Opportunitites which inturn are related to current line item.
+        For(Opportunity op : [Select id, AccountId From Opportunity WHERE id  in :AccOppMap.keySet()]){
+            if( op.AccountId != null ){
+                AccOppMap.put(op.id, op.AccountId);
+            }
+        }        
+        List<Asset> AssetsList = new List<Asset>();
+        //this is what will trigger after Line Item Insertion.
+        for(OpportunityLineItem opL : LineItemList){
+            if( opL.OpportunityId != null  &&  AccOppMap.ContainsKey(opL.OpportunityId)){
+                Asset Ass = new Asset();
+                Ass.AccountId = AccOppMap.get(opL.OpportunityId);
+                Ass.Name = 'Test Asset';
+                Ass.City = 'Lahore';
+                AssetsList.add(Ass);
+            }
+        }
+        Insert AssetsList;
+        System.debug('An Asset has been inserted to the Account , Asset list size is ' + AssetsList.size());
+    }
+    
+    
+    
+    
+    
+    /*Write a trigger on the Opportunity line item when a line item deletes delete an opportunity as well.*/
+    Public static void DeleteOpportunityAfterDeletingLineItem(List<OpportunityLineItem> ItemsList){
+        
+        Set<id> oppIDs = new Set<id>();
+        //Lets iterate the opportunity ids in seperate set to delete them later.
+        for(OpportunityLineItem li : ItemsList){
+            if(li.OpportunityId != null){
+                oppIDS.add(li.OpportunityId);
+            }
+        }
+        List<Opportunity>  OpToDelete = new List<Opportunity>();
+        //now let perform the operation on LIne Item for deletion
+        for(Opportunity op : [Select id, Name From Opportunity WHERE id in : oppIDs]){
+            OpToDelete.add(op);
+        }
+            
+        Delete OpToDelete;
+        
+    }
+    
+    
+  
+    //When an opportunity line item is created an email should go to 
+	//Opportunity Account Client Contact — Client Contact would be a field
+	//on Account lookup to contacts
+    
+        public static void sendEmailToContactRelatedToAccount(List<OpportunityLineItem> OLIList) {
+            Map<Id, Id> accOppMap = new Map<Id, Id>();
+            Set<Id> accountIds = new Set<Id>();
+    
+            // Collect unique Opportunity IDs associated with the new Opportunity Line Items
+            for (OpportunityLineItem oli : OLIList) {
+                if (oli.OpportunityId != null) {
+                    accOppMap.put(oli.OpportunityId, null);
+                }
+            }
+    
+            // Query for the related Opportunities and their Accounts
+            for (Opportunity opp : [SELECT Id, AccountId FROM Opportunity WHERE Id IN :accOppMap.keySet()]) {
+                accOppMap.put(opp.Id, opp.AccountId);
+                accountIds.add(opp.AccountId);
+            }
+    
+            // Query for the Contacts related to the Accounts
+            Map<Id, Contact> accWithCon = new Map<Id, Contact>();
+            for (Contact con : [SELECT Id, Email, AccountId FROM Contact WHERE AccountId IN :accountIds]) {
+                accWithCon.put(con.AccountId, con);
+            }
+    
+            // Prepare and send emails
+            List<Messaging.SingleEmailMessage> mailList = new List<Messaging.SingleEmailMessage>();
+            for (OpportunityLineItem oli : OLIList) {
+                Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+    
+                if (accOppMap.containsKey(oli.OpportunityId)) {
+                    Id accountId = accOppMap.get(oli.OpportunityId);
+                    if (accWithCon.containsKey(accountId)) {
+                        Contact relatedContact = accWithCon.get(accountId);
+    
+                        // Build email content
+                        String content = 'This email is to inform you that a Line Item related to an Opportunity '
+                                + oli.Opportunity.Name + ' has been created.';
+    
+                        // Set email properties
+                        mail.setToAddresses(new String[]{relatedContact.Email});
+                        mail.setSubject('New Line Item Created');
+                        mail.setPlainTextBody(content);
+    
+                        // Add the email to the list
+                        mailList.add(mail);
+                    }
+                }
+            }
+    	
+            if (!mailList.isEmpty()) {
+                Messaging.sendEmail(mailList);
+            }
+        }
+    
+
+
+    
+   
+    
+    
+    
+    
+    
+}

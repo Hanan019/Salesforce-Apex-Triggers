@@ -1,0 +1,6 @@
+trigger LeadTrigger on Lead (before insert,After INSERT, Before Update, After Update, Before Delete, After Delete, After Undelete) {
+
+    LeadTriggerDispatcher.Dispatch(Trigger.OperationType);
+
+    
+}

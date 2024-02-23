@@ -1,0 +1,4 @@
+trigger OpportunityLineItemTrigger on OpportunityLineItem (before insert,After Insert, Before Update, After Update, After Delete,Before Delete, After Undelete ) {
+
+     LineItemDispatcher.Dispatch(Trigger.OperationType);
+}

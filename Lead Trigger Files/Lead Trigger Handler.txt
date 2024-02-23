@@ -1,0 +1,73 @@
+public class LeadTriggerHandler {
+
+    /*When ever Lead is created with LeadSource as Web then give rating as cold otherwise hot*/
+    //Object - Lead
+    //Type  - Insert
+    //Event - Before
+    Public static void InsertLeadOnLeadSource(List<Lead> LeadList){
+        
+        for(Lead led : LeadList){
+            if(led.LeadSource == 'Web'){
+                led.Rating = 'Cold';
+            }
+            else{
+                led.Rating = 'Hot';
+            }
+        }
+    }
+    
+    
+    
+     /*  Upload any pdf file into Document first. Send an email as an attachment to the lead email Id when a lead is created. 
+        Email Subject: Welcome 
+        Body: Please find the attached PDF.*/
+    
+    public static void SendEmailAsAttachementonLead(List<Lead> leadList){
+
+      List<Messaging.SingleEmailMessage> emailList = new List<Messaging.SingleEmailMessage>();
+    
+          for (Lead le : leadList) {
+                if (lead.Email != null) {
+                    
+                    //insert ContentVersion
+                    String testData  = 'This is the  data in the pdf uploaded';
+                    ContentVersion cVer = new ContentVersion();
+                    cVer.ContentLocation = 'S';// ----------- Origin of the Document.
+                    cVer.Title = le.Lastname;//-------->Titleof the File
+                    cVer.PathOnClient = cVer.Title + '.pdf';  //-----TO determine the file type stored in salesforce
+                    cVer.VersionData = Blob.topdf(testData);//-----Content/ Body of the file.
+                    insert cVer;
+                   
+                    //in order to share it with the records that i want show the Documents Link on.
+                   
+                    ContentDocumentLink cDocLink = new ContentDocumentLink();
+                   	cDocLink.ContentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :cVer.Id LIMIT 1].ContentDocumentId;
+                    cDocLink.LinkedEntityId = le.Id;
+                    cDocLink.Visibility = 'AllUsers';
+                    cDocLink.ShareType = 'V'; 
+                    insert cDocLink;
+                    
+                  Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+                  email.setToAddresses(new String[] { le.Email });
+                  email.setSubject('Welcome');
+                  email.setHtmlBody('<p>Please find the attached PDF.</p>');
+            
+                  // 2. Attach the uploaded PDF to the email
+                  List<Messaging.Emailfileattachment> attachments = new List<Messaging.Emailfileattachment>();
+                  Messaging.Emailfileattachment attachment = new Messaging.Emailfileattachment();
+                  attachment.setBody(cVer.VersionData); 
+                  attachment.setFileName(cVer.Title);
+                  attachment.setContentType('application/pdf');
+                  attachments.add(attachment);
+                  email.setFileAttachments(attachments);
+            
+                  emailList.add(email);
+                }
+          }     
+      Messaging.sendEmail(emailList);
+    }
+    
+    
+    
+    
+}

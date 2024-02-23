@@ -1,0 +1,91 @@
+public class CaseTriggerHandler {
+
+    /*When ever a case is created with origin as email then set status as new and Priority as Medium*/
+    //Object - Case
+    //Type - Insert
+    //Event - Before
+    Public static void  InsertCaseOnFieldsUpdate(List<Case> CaseList){
+            for(Case cc : CaseList){
+            if(cc.Origin == 'Email'){
+                cc.Status = 'New';
+                cc.Priority = 'Medium';
+               
+            }
+        }
+        
+    }
+    
+    
+    /*When a Case is created on any Account, put the latest case number on  the Account in the ‘Latest Case Number’ field.*/
+    //Object - Case
+    //Type - Insert
+    //Event - After
+    
+    Public static void PutCaseNo_To_Account(List<Case> CaseList){
+        
+        List<id> AccIds = new List<id>();
+        	for(Case c : CaseList){
+            if(c.AccountId != null){
+                AccIds.add(c.AccountId);
+            }
+        }
+        
+        List<Account> ListToUpdate = new List<Account>();
+
+       //Lets retrieve the accounts record where whose ids are there in the SetIds
+       List<Account> ExistingAcc = [Select id,(Select id, CaseNumber FROM Cases ORDER BY CreatedDate Desc Limit 1) From Account Where id IN :AccIds];
+        	for(Account curr : ExistingAcc)  {
+            List<Case> relatedCase = curr.Cases;
+           
+            if(relatedCase != null){
+                Case LatestCase =relatedCase[0];
+                curr.Latest_Case_Number__c = LatestCase.CaseNumber;
+                ListToUpdate.add(curr);
+            }
+            
+        }      
+        Update ListToUpdate;
+        
+    }
+    
+    
+    /*Case Object. On creation of Case, as per the record type populate the total
+  number of Partner Case or Customer Case on Account object. CreateCustom Fields on Account to have total numbers.*/
+    //Object - Case
+    //Type - Insert
+    //Event - After
+public static void updateTotalCasesOnAccount(List<Case> caseList) {
+    // Collect Account Ids that need to be updated
+    Set<Id> accountIdsToUpdate = new Set<Id>();
+    
+    for (Case c : caseList) {
+        if (c.AccountId != null) {
+            accountIdsToUpdate.add(c.AccountId);
+        }
+    }
+
+    // Fetch accounts with related cases
+    List<Account> accountsWithCases = [SELECT Id, Total_Customer_Case__c, (SELECT Id FROM Cases) FROM Account WHERE Id IN :accountIdsToUpdate];
+    List<Account> accToUpdate = new List<Account>();
+
+    for (Account acc : accountsWithCases) {
+        if (acc.Cases != null && !acc.Cases.isEmpty()) {
+            // Calculate the total number of cases for the account
+            acc.Total_Customer_Case__c = acc.Cases.size();
+            accToUpdate.add(acc); // Add the account to the list for update
+        }
+    }
+
+    // Update the accounts with the calculated total cases
+    if (!accToUpdate.isEmpty()) {
+        update accToUpdate;
+    }
+}
+    
+    
+    
+    
+    
+    
+    
+}

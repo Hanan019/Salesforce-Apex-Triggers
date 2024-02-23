@@ -1,0 +1,78 @@
+public class ContactTriggerHandler {
+
+    /*  When Contact update collect all opportunity Amount And Update this amount on Account Level Field (Total Opportunity Amount).*/
+    //Object - Contact
+    //Type - Update
+    //Event - After
+    public  static void updateOpportunityAmount(List<Contact> ContactList){
+             List<Contact> UpdatedList = new List<Contact>();
+        
+        // Query the related Opportunities for all Contacts in Trigger.new
+        Map<Id, Contact> ContactToUpdate = new Map<Id, Contact>([Select Id, Total_Opportunity_Amount__c, (Select Id, Amount from Opportunities) from Contact WHERE Id IN :Trigger.newMap.keySet()]);      
+
+        for (Contact con : ContactList) { 
+            Double TotalOppAmount = 0;  // Variable to store the total amount for the contact.
+
+            // Iterate through the related opportunities 
+            for (Opportunity op : ContactToUpdate.get(con.Id).Opportunities) {
+                TotalOppAmount += op.Amount;
+            }
+
+            con.Total_Opportunity_Amount__c = TotalOppAmount;
+            UpdatedList.add(con);
+        }
+
+        // No need to perform a separate update, changes will be reflected automatically
+    }
+    
+    
+    
+    
+    /*  Write a trigger on contact to prevent duplicate records based on Contact Email & Contact Phone.*/
+    //Object - Contact
+    //Type - Insert
+    //Event - Before
+    Public static void PreventDuplication(List<Contact> ContactsList){
+       
+        Map<String,Contact> OldRecords = new Map<String, Contact>();//---Previous Records
+        for(Contact Exist : [ Select id, Email, Phone FROM Contact ]) // --- both are used as key in the map.
+        {
+            OldRecords.put(Exist.Email, Exist);
+            OldRecords.put(Exist.Phone, Exist);
+        }
+        
+        	for(Contact con : ContactsList){
+            //Contact ExistingContacts = OldRecords.get(con.Id);
+                if(con.Email != null && OldRecords.containsKey(con.Email)){
+                    con.Email.addError('Duplicate Found! Please Enter  different Email Address ');
+                }
+                if(con.Phone != null && OldRecords.containsKey(con.Phone)){
+                    con.Phone.addError('Duplicate Phone Found! Please Enter a different one');
+                }
+        }
+            
+    }
+    
+    
+        /*Upon contact creation an email should be sent to email populated on Contact with specified template.*/
+    Public static void sendEmailOnContactCreation(List<Contact> ConList){
+        
+        List<Messaging.Email> emails = new List<Messaging.Email>();
+        
+        for(Contact con : ConList){
+            Messaging.SingleEmailMessage msg = new Messaging.SingleEmailMessage();
+            String[] Address = new String[]{con.Email};
+            msg.SetToAddresses(address);
+            String sub = 'A new Contact was Created. ';
+            msg.SetSubject(sub);
+            String content = 'Hi ' + con.FirstName +' <br/><br/>'+
+                'This is the Confirmation Email that the Contact is on date ' + con.CreatedDate + ' <br/> Thanku<br/>Regards<br/> System Administrator';
+            msg.setHtmlBody(content );
+            emails.add(msg);
+        }
+        Messaging.SendEmail(emails);
+        
+    }
+    
+    
+}

@@ -1,0 +1,41 @@
+public class OpportunityTriggerDispatcher {
+
+    public static void Dispatch(System.TriggerOperation operationType){
+        Switch on operationType{
+            when BEFORE_INSERT{
+                /*Upon Opportunity Creation if Amount is not null and is greater than 100000 then populate ‘Hot Opportunity’ in description field.*/
+                //OpportunityTriggerHandler.CreateOpportunityWhenAmount(Trigger.new);
+                
+                //OpportunityTriggerHandler.Update_Desc_ON_Stage(Trigger.new);
+            }
+            WHEN AFTER_INSERT{
+                //OpportunityTriggerHandler.UpdateAmountOnAccount(Trigger.new);
+            }
+            WHEN Before_update{
+                /*If opportunity Stage is updated upon its creation or update then update
+    			 *description as either 'Opp is Closed Lost' or 'Opp is Closed Won' or 'Opp IS Open'*/
+                 //OpportunityTriggerHandler.Update_Desc_ON_Stage(Trigger.new);
+                
+                /*When an opportunity is updated to Closed Lost and Closed Lost Reason (field) 
+                 * is not populated then throw validation error that
+                 *  ‘Please populate Closed Lost Reason’ on opportunity. [before update]*/
+                // OpportunityTriggerHandler.ValidationOnStageLostReason(Trigger.new);
+            }
+            WHEN After_update{
+                //*  Account records should have a field named ‘Recent Opportunity Amount’. 
+    			//It should contain the opportunity amount of the latest created opportunity on account.*/
+               //OpportunityTriggerHandler.UpdateAmountOnAccount(Trigger.new);
+            }
+            WHEN Before_delete{
+
+            }
+            when After_delete{
+                
+            }
+            when After_undelete{
+                
+            }
+             
+        }
+    }
+}

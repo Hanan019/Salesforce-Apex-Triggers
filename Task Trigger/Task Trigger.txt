@@ -1,0 +1,15 @@
+trigger TaskTrigger on Task (before insert,Before Delete) {
+
+      //Write a trigger, only the system admin user should be able to delete the task
+    if(Trigger.isBefore && Trigger.isDelete){
+                // Query for the System Administrator profile Id
+        Id systemAdminProfileId = [SELECT Id FROM Profile WHERE Name = 'System Administrator' LIMIT 1].Id;
+    
+        for (Task T : Trigger.old) {
+            // Check if the current user's profile is not 'System Administrator'
+            if (UserInfo.getProfileId() != systemAdminProfileId) {
+                T.addError('You cannot delete this Task as you are not an admin.   / Trigger : TaskTrigger');
+            }
+        }
+    }
+}

@@ -1,0 +1,35 @@
+public class CaseTriggerDispatcher {
+
+    Public Static void Dispatch(System.TriggerOperation operationType){
+        Switch On operationType{
+            When BEFORE_INSERT{
+                //When ever a case is created with origin as email then set status as new and Priority as Medium
+                CaseTriggerHandler.InsertCaseOnFieldsUpdate(Trigger.new);
+                
+            }
+            WHEN AFTER_INSERT{
+				//When a Case is created on any Account, put the latest case number on  the Account in the ‘Latest Case Number’ field.
+                CaseTriggerHandler.PutCaseNo_To_Account(Trigger.new);
+                
+                    /*Case Object. On creation of Case, as per the record type populate the total
+  					number of Partner Case or Customer Case on Account object. CreateCustom Fields on Account to have total numbers.*/
+                CaseTriggerHandler.updateTotalCasesOnAccount(Trigger.new);
+            }
+            WHEN BEFORE_UPDATE{
+                
+            }
+            WHEN AFTER_UPDATE{
+                
+            }
+            WHEN BEFORE_DELETE{
+                
+            }
+            WHEN AFTER_DELETE{
+                
+            }
+            WHEN AFTER_UNDELETE{
+                
+            }
+        }
+    }
+}

@@ -1,0 +1,161 @@
+trigger OpportunityTrigger3 on Opportunity (Before Insert, After Insert,Before Update, After Update, Before Delete,After Delete) {
+
+    /*Account records should have a field named ‘Recent Opportunity Amount’.
+     *  It should contain the opportunity amount of the latest created opportunity on account.*/
+    //Object -Opportunity
+    //Type - Insert
+    //Event - After
+    
+    if(Trigger.isInsert && Trigger.isAfter){
+          
+        //List to update
+        List<id> AccIds = new List<id>();
+        //Storing the accounts Ids of Opportunities that are to be updated/ Inserted.
+        for(Opportunity op : Trigger.new){
+            if( op.AccountId != null ){
+                AccIds.add(op.AccountId);
+            }
+        }
+        //List to store the records after its field is updated.
+        List<Account> UpdatedAccounts = new List<Account>();
+        //fetching the Accounts that are related to the related opportunity 
+        List<Account> AccToUse = [Select id, Recent_Opportunity_Amount__c, (Select id,Amount FROM Opportunities ORDER BY CreatedDate Desc Limit 1 ) FROM Account Where id in : AccIds];
+        for(Account ac : AccToUse){
+            List<Opportunity>  relatedOpps = ac.opportunities; //------------->>>List to store the Accounts related to the current Accounts.
+            if(relatedOpps != null){
+                Opportunity latest = relatedopps[0];//-----> since we need the last opportunity so getting the first record.
+                ac.Recent_Opportunity_Amount__c = latest.Amount;
+                updatedAccounts.add(ac);
+            }
+        }
+        Update updatedAccounts;
+        
+    }
+    
+
+    
+    
+    
+    /*//If an opportunity is closed then, no one should be able to delete it except the user having a System Administrator profile.
+    
+    if(Trigger.isBefore && Trigger.isDelete){
+        
+        Id AdminProfileId = [Select id From Profile where Name = 'System Administrator' Limit 1].id;
+        for(Opportunity opp : Trigger.old){
+            if(UserInfo.getProfileId() != AdminProfileId && opp.StageName == 'Closed Won' || opp.StageName == 'Closed Lost' || opp.StageName == 'Buy Won' || opp.StageName == 'Buy Lost'){
+                opp.addError('You cannot delete this record as you .Only System Administrator can delete this .  Trigger Method  : ');
+            }
+        }
+    }
+    */
+ 
+    
+    
+    /*When a Opportunity Stage (field) is changed, create a Task record onOpportunity and 
+     * assign it to Logged In User/Opportunity Owner / Any User.*/
+    
+        if (Trigger.isAfter && Trigger.isUpdate) {
+        List<Task> TaskList = new List<Task>();
+    
+        for (Opportunity newOpp : Trigger.new) {
+            Opportunity oldOpp = Trigger.oldMap.get(newOpp.Id);
+    		System.debug('Old Stage : ' + oldOpp.StageName);
+            System.debug('New Stage : '+ newOpp.StageName);
+            
+            if (newOpp.StageName != oldOpp.StageName) {
+                // StageName has changed, create a task
+                Task T = new Task();
+                T.OwnerId = newOpp.CreatedById;
+                T.Subject = 'This Task is created for opportunity you created.';
+                T.Status = 'In Progress';
+                T.Priority = 'Normal';
+                T.WhatId = newOpp.Id;
+                TaskList.add(T);
+            }
+        }
+    
+        if (!TaskList.isEmpty()) {
+            insert TaskList;
+        }
+    }
+
+ 
+    
+
+   
+    
+    /*Write a trigger on Opportunity, when an Opportunity will insert an 
+	Opportunity Line Item should be insert by default with any of the Products associated with Opportunity.*/
+    //Object - Opportunity
+    //Type - Insert
+    //Event - After
+    if(Trigger.isAfter && Trigger.isInsert){
+            List<OpportunityLineItem> opportunityLineItemsToInsert = new List<OpportunityLineItem>();
+
+        	for (Opportunity opp : Trigger.new ) {
+            // Check if the Opportunity has associated Products
+            if (opp.OpportunityLineItems == null || opp.OpportunityLineItems.isEmpty()) {
+			   String defaultProductName = 'GenWatt Diesel 1000kW';
+                // Create Opportunity Line Item
+                OpportunityLineItem oli = new OpportunityLineItem(
+                    OpportunityId = opp.Id,
+                    PricebookEntryId = [SELECT Id FROM PricebookEntry WHERE Product2.Name = :defaultProductName LIMIT 1].Id,
+                    Quantity = 10,
+                    UnitPrice = 100 // You can set the unit price based on your requirements
+                );
+
+                opportunityLineItemsToInsert.add(oli);
+            }
+        }
+
+            // Insert Opportunity Line Items
+            if (!opportunityLineItemsToInsert.isEmpty()) {
+                insert opportunityLineItemsToInsert;
+            }
+    }
+    
+    
+    
+    
+    
+    /*When any Opportunity is created with amount populated or 
+OpportunityAmount is updated then populate total Amount on Account 
+Level for allrelated opportunities in Annual Revenue Field.
+If opportunity is deleted or undeleted then update Amount on Account as well. (Hint: rollup summary)*/
+    Set<id> Accountids = new Set<id> ();
+    if(Trigger.isAfter && (Trigger.isInsert || Trigger.isUpdate || Trigger.isUndelete)){
+            For(Opportunity op : Trigger.new){
+                Accountids.add(op.AccountId);
+            }   
+       }
+		
+    if(Trigger.isAfter && Trigger.isDelete){
+        For(Opportunity op : Trigger.old){
+            Accountids.add(op.AccountId);
+        }
+    }
+    //let create a map and put this aggregated sum into where Key = AccountID, Value = Sum(Amount);
+    Map<id, Double> AccMap = new Map<id, Double>();
+   for (AggregateResult agr : [SELECT AccountId, SUM(Amount) OppSum FROM Opportunity WHERE AccountId IN :Accountids GROUP BY AccountId]) {
+    	AccMap.put((ID)agr.get('AccountId'), double.valueof(agr.get('OppSum')));
+	}
+
+    //we need a list to add the updated accounts into it. 
+    List<Account> UpdatedAccounts = new List<Account>();
+    for(Account ac : [Select id, AnnualRevenue From Account Where id In : AccMap.KeySet()]){
+        if(AccMap.containsKey(ac.Id)){
+            ac.AnnualRevenue = AccMap.get(ac.Id);
+            UpdatedAccounts.add(ac);
+        }
+    }
+    
+    try{
+        upsert UpdatedAccounts;
+    }
+    catch(DMLException e){
+      
+    }
+    
+    
+
+}

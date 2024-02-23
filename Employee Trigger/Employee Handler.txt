@@ -1,0 +1,71 @@
+public class EmployeeHandler {
+
+    
+    
+    //When the Employee record is deleted then update ‘Left Employee Count’ on Account.
+    Public Static void TotalEmployeeCountOnAccount(List<Employee__c> EmployeeList){
+        
+ 	//lets first collect the Account ids in a set that are related to some employee
+ 	 	Set<Id> AccountWithEmployee = new Set<id>();
+        for(Employee__c e : EmployeeList){
+            if(e.Account__c != null){
+                AccountWithEmployee.add(e.Account__c);
+            }
+        }
+		List<Account> AccountsUpdated = new List<Account>();      
+        //now lets retrieve all these accounts with related Employees via Query
+        List<Account> AccToUpdate = [Select id, Left_Employee_Count__c, (Select id FROM Employees__r) FROM Account where id IN  : AccountWithEmployee];
+        for(Account Acc: AccToUpdate){
+            if(Acc.Employees__r != null && !Acc.Employees__r.isEmpty()){
+                Acc.Left_Employee_Count__c = Acc.Employees__r.size();
+                AccountsUpdated.add(Acc);
+            }
+        }
+		Update AccountsUpdated;
+        
+    }
+    
+    
+    
+          /*en the Employee record is inserted, deleted and undeleted then update 
+          ‘Present Employee Count’ on related Account. [Parent-Child 
+		SOQL]*/
+        Public Static void DeleteEmployeeUpdateAccount(List<Employee__c> EmployeeList){
+ 	//lets first collect the Account ids in a set that are related to some employee
+ 	 	Set<Id> AccountWithEmployee = new Set<id>();
+        for(Employee__c e : EmployeeList){
+            if(e.Account__c != null){
+                AccountWithEmployee.add(e.Account__c);
+            }
+        }  
+        List<Account> AccountsUpdated = new List<Account>();
+        //now lets retrieve all these accounts with related Employees via Query
+        List<Account> AccToUpdate = [Select id, Present_Employee_Count__c, (Select id FROM Employees__r) FROM Account where id IN  : AccountWithEmployee];
+        for(Account Acc: AccToUpdate){
+            if(Acc.Employees__r != null && !Acc.Employees__r.isEmpty()){
+                Acc.Present_Employee_Count__c = Acc.Employees__r.size();
+                AccountsUpdated.add(Acc);
+            }
+        }
+		Update AccountsUpdated;
+        
+        }
+    
+    
+    
+    //Undelete An Employee and set the active as true
+    Public static void UndeleteEmployee(List<Employee__c> EmpList){
+       	List<Employee__c> ListToUpdate = new List<Employee__c>();
+        
+        for(Employee__c emp : EmpList){
+            Employee__c e = new Employee__c();
+            e.id = emp.id;
+            e.Name = emp.Name;
+            e.Account__c =  emp.Account__c;
+            e.Active__c = True;
+            ListToUpdate.add(e);
+        }
+        Update ListToUpdate;
+    }
+    
+}
